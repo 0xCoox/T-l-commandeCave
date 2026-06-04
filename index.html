@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Télécommande CAVE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input {
+            background: #2a2a2a;
+            color: white;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #0056b3; }
+        button.action-btn { background: #28a745; }
+        button.action-btn:hover { background: #218838; }
+        #status {
+            font-weight: bold;
+            color: #ffc107;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Contrôle du CAVE</h2>
+        <div id="status">Statut : Déconnecté</div>
+
+        <label for="ipInput">Adresse IP du Serveur CAVE :</label>
+        <input type="text" id="ipInput" value="ws://localhost">
+        <label for="portInput">Port :</label>
+        <input type="text" id="portInput" value="3000">
+        <button id="connectBtn">Se connecter</button>
+
+        <hr style="border-color: #333; margin: 20px 0;">
+
+        <h3>Actions</h3>
+        <button id="flipBtn" class="action-btn">Inverser les Yeux (Flip Eyes)</button>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
+
+
