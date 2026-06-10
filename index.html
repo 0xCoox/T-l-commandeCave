@@ -47,6 +47,38 @@
             color: #ffc107;
             margin-bottom: 20px;
         }
+        /* Style personnalisé pour le slider */
+        .slider-container {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .slider-container label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #555;
+            outline: none;
+            border-radius: 5px;
+            padding: 0;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #meshName {
+            font-weight: bold;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -65,10 +97,20 @@
 
         <h3>Actions</h3>
         <button id="flipBtn" class="action-btn">Inverser les Yeux (Flip Eyes)</button>
-    </div>
+        
+        <div class="slider-container" style="text-align: left; margin: 20px 0;">
+            <label for="meshSelect" style="font-weight: bold; display: block; margin-bottom: 5px;">Sélectionner un nuage de points (.ply) :</label>
+            <select id="meshSelect" style="width: 100%; padding: 12px; background: #2a2a2a; color: white; border: none; border-radius: 5px; font-size: 16px; box-sizing: border-box; cursor: pointer;">
+                <option value="test_point_cloud.ply">Arbre d'origine</option>
+                <option value="arbre_rue.ply">Arbre de rue</option>
+            </select>
+        </div>
+        <div class="slider-container">
+            <label for="sizeSlider">Taille des points :</label>
+            <input type="range" id="sizeSlider" min="0.001" max="0.5" step="0.001" value="0.1" disabled>
+        </div>
+        </div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="./app.js?v=3"></script> 
 </body>
 </html>
-
-
