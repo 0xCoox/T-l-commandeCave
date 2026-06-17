@@ -11,11 +11,17 @@ const connectBtn = document.getElementById("connectBtn");
 const flipBtn = document.getElementById("flipBtn");
 const meshSelect = document.getElementById("meshSelect");
 const sizeSlider = document.getElementById("sizeSlider"); 
+const clipSlider = document.getElementById("clipSlider");
+
+const meshViewer = document.getElementById("meshViewer");
+const confirmMeshBtn = document.getElementById("confirmMeshBtn");
 
 // Contrôles désactivés jusqu'à la confirmation du join
 flipBtn.disabled = true;
 meshSelect.disabled = true;
 sizeSlider.disabled = true; 
+confirmMeshBtn.disabled = true; // 🌟 Désactivé par défaut
+clipSlider.disabled = true;
 
 // Connexion au serveur
 connectBtn.addEventListener("click", () => {
@@ -49,11 +55,12 @@ network.setCallbacks({
             if (data?.payload?.command === "INSTANCE_LIST") {
                 statusDiv.innerText = "Statut : Connecté & Pret !";
                 statusDiv.style.color = "#28a745";
-                
                 // Activation de tous les contrôles
+                clipSlider.disabled = false;
                 flipBtn.disabled = false;
                 meshSelect.disabled = false;
                 sizeSlider.disabled = false; 
+                confirmMeshBtn.disabled = false; // 🌟 Activé une fois connecté
             }
         } catch (e) {
             console.warn("Message non-JSON reçu :", msg);
@@ -64,10 +71,11 @@ network.setCallbacks({
         statusDiv.innerText = "Statut : Déconnecté";
         statusDiv.style.color = "#dc3545";
         
-        // Désactivation
+        clipSlider.disabled = true;
         flipBtn.disabled = true;
         meshSelect.disabled = true;
         sizeSlider.disabled = true;
+        confirmMeshBtn.disabled = true;
     },
 
     onError: () => {
@@ -78,6 +86,9 @@ network.setCallbacks({
         flipBtn.disabled = true;
         meshSelect.disabled = true;
         sizeSlider.disabled = true;
+        confirmMeshBtn.disabled = true;
+        clipSlider.disabled = true; 
+
     },
 });
 
@@ -106,16 +117,38 @@ function sendInstanceCommand(command, data = {}) {
     }));
 }
 
-// Boutons et contrôles
+
 flipBtn.addEventListener("click", () => {
     console.log("flipEyes →");
     sendModuleCommand(INSTANCE_UUID, "flipEyes", {});
 });
 
+//On affiche la miniature .glb dans la boîte 3D quand le menu change
 meshSelect.addEventListener("change", (event) => {
-    const fileName = event.target.value;
-    console.log(`changeMesh → ${fileName}`);
+    const selectedOption = event.target.options[event.target.selectedIndex];
+    const modelSrc = selectedOption.getAttribute("data-model");
+    
+    meshViewer.src = modelSrc;
+    meshViewer.style.display = "block";
+    confirmMeshBtn.style.display = "inline-block";
+});
+
+//On envoie l'ordre au CAVE uniquement au clic sur le bouton Confirmer
+confirmMeshBtn.addEventListener("click", () => {
+    const fileName = meshSelect.value;
+    console.log(`[Validation] Envoi de l'ordre changeMesh → ${fileName}`);
+    
     sendModuleCommand(INSTANCE_UUID, "changeMesh", { fileName });
+    
+    // Feedback visuel temporaire sur le bouton
+    const texteOriginal = confirmMeshBtn.innerText;
+    confirmMeshBtn.innerText = "✓ Envoyé au CAVE !";
+    confirmMeshBtn.style.background = "#28a745"; // Vert succès
+    
+    setTimeout(() => {
+        confirmMeshBtn.innerText = texteOriginal;
+        confirmMeshBtn.style.background = "#ff8c00"; // Retour à l'orange
+    }, 1500);
 });
 
 // L'événement "input" permet un envoi en direct pendant que tu glisses le curseur
@@ -123,4 +156,10 @@ sizeSlider.addEventListener("input", (event) => {
     const newSize = parseFloat(event.target.value);
     console.log(`changePointSize → ${newSize}`);
     sendModuleCommand(INSTANCE_UUID, "changePointSize", { size: newSize });
+});
+
+clipSlider.addEventListener("input", (event) => {
+    const height = parseFloat(event.target.value);
+    console.log(`changeClippingHeight → ${height}`);
+    sendModuleCommand(INSTANCE_UUID, "changeClippingHeight", { height: height });
 });
