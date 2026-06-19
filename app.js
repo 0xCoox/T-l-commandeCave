@@ -16,6 +16,17 @@ const clipSlider = document.getElementById("clipSlider");
 const meshViewer = document.getElementById("meshViewer");
 const confirmMeshBtn = document.getElementById("confirmMeshBtn");
 
+// 🕹️ Récupération des éléments Joysticks
+const joystickContainer = document.getElementById("joystickContainer");
+const joystickZone = document.getElementById("joystickZone");
+const joystickCursor = document.getElementById("joystickCursor");
+const joystickValues = document.getElementById("joystickValues");
+
+const joystickHeightContainer = document.getElementById("joystickHeightContainer");
+const joystickHeightZone = document.getElementById("joystickHeightZone");
+const joystickHeightCursor = document.getElementById("joystickHeightCursor");
+const joystickHeightValue = document.getElementById("joystickHeightValue");
+
 // Contrôles désactivés jusqu'à la confirmation du join
 flipBtn.disabled = true;
 meshSelect.disabled = true;
@@ -55,12 +66,23 @@ network.setCallbacks({
             if (data?.payload?.command === "INSTANCE_LIST") {
                 statusDiv.innerText = "Statut : Connecté & Pret !";
                 statusDiv.style.color = "#28a745";
+                
                 // Activation de tous les contrôles
                 clipSlider.disabled = false;
                 flipBtn.disabled = false;
                 meshSelect.disabled = false;
                 sizeSlider.disabled = false; 
-                confirmMeshBtn.disabled = false; // 🌟 Activé une fois connecté
+                confirmMeshBtn.disabled = false; 
+                
+                // Activation des Joysticks
+                if (joystickContainer) {
+                    joystickContainer.style.opacity = "1";
+                    joystickContainer.style.pointerEvents = "auto";
+                }
+                if (joystickHeightContainer) {
+                    joystickHeightContainer.style.opacity = "1";
+                    joystickHeightContainer.style.pointerEvents = "auto";
+                }
             }
         } catch (e) {
             console.warn("Message non-JSON reçu :", msg);
@@ -76,6 +98,16 @@ network.setCallbacks({
         meshSelect.disabled = true;
         sizeSlider.disabled = true;
         confirmMeshBtn.disabled = true;
+
+        // Désactivation des Joysticks
+        if (joystickContainer) {
+            joystickContainer.style.opacity = "0.5";
+            joystickContainer.style.pointerEvents = "none";
+        }
+        if (joystickHeightContainer) {
+            joystickHeightContainer.style.opacity = "0.5";
+            joystickHeightContainer.style.pointerEvents = "none";
+        }
     },
 
     onError: () => {
@@ -89,6 +121,15 @@ network.setCallbacks({
         confirmMeshBtn.disabled = true;
         clipSlider.disabled = true; 
 
+        // Désactivation des Joysticks
+        if (joystickContainer) {
+            joystickContainer.style.opacity = "0.5";
+            joystickContainer.style.pointerEvents = "none";
+        }
+        if (joystickHeightContainer) {
+            joystickHeightContainer.style.opacity = "0.5";
+            joystickHeightContainer.style.pointerEvents = "none";
+        }
     },
 });
 
@@ -163,3 +204,105 @@ clipSlider.addEventListener("input", (event) => {
     console.log(`changeClippingHeight → ${height}`);
     sendModuleCommand(INSTANCE_UUID, "changeClippingHeight", { height: height });
 });
+
+
+// ==========================================
+// 🕹️ CONTRÔLE JOYSTICK 2D (FACE X/Y)
+// ==========================================
+let isDragging = false;
+let joystickRadius = 75; 
+let maxCursorDist = joystickRadius - 25; 
+
+function sendJoystickData(x, y) {
+    if(joystickValues) joystickValues.innerText = `X: ${x.toFixed(2)} | Y: ${y.toFixed(2)}`;
+    sendModuleCommand(INSTANCE_UUID, "moveTree", { dirX: x, dirY: y }); // On envoie X et Y
+}
+
+if(joystickZone) {
+    joystickZone.addEventListener("pointerdown", (e) => {
+        isDragging = true;
+        joystickCursor.style.transition = "none"; 
+        updateJoystick(e);
+    });
+}
+
+window.addEventListener("pointermove", (e) => {
+    if (isDragging) updateJoystick(e);
+    if (isDraggingHeight) updateDepthJoystick(e);
+});
+
+window.addEventListener("pointerup", () => {
+    if (isDragging) {
+        isDragging = false;
+        joystickCursor.style.transition = "top 0.2s ease-out, left 0.2s ease-out";
+        joystickCursor.style.top = "50%";
+        joystickCursor.style.left = "50%";
+        sendJoystickData(0, 0);
+    }
+    if (isDraggingHeight) {
+        isDraggingHeight = false;
+        joystickHeightCursor.style.transition = "top 0.2s ease-out";
+        joystickHeightCursor.style.top = "50%";
+        sendDepthData(0);
+    }
+});
+
+function updateJoystick(e) {
+    const rect = joystickZone.getBoundingClientRect();
+    const centerX = rect.left + joystickRadius;
+    const centerY = rect.top + joystickRadius;
+
+    let dx = e.clientX - centerX;
+    let dy = e.clientY - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > maxCursorDist) {
+        dx = (dx / distance) * maxCursorDist;
+        dy = (dy / distance) * maxCursorDist;
+    }
+
+    joystickCursor.style.left = `${dx + joystickRadius}px`;
+    joystickCursor.style.top = `${dy + joystickRadius}px`;
+
+    const normalizedX = dx / maxCursorDist;
+    const normalizedY = -(dy / maxCursorDist); // Inversé pour que pousser en haut = +Y
+
+    sendJoystickData(normalizedX, normalizedY);
+}
+
+// ==========================================
+// 🚀 CONTRÔLE JOYSTICK 1D (PROFONDEUR Z)
+// ==========================================
+let isDraggingHeight = false;
+let trackHeight = 150; 
+let heightCursorSize = 40; 
+let maxCursorDistY = (trackHeight - heightCursorSize) / 2; 
+
+function sendDepthData(z) {
+    if(joystickHeightValue) joystickHeightValue.innerText = `Z: ${z.toFixed(2)}`;
+    sendModuleCommand(INSTANCE_UUID, "moveTreeDepth", { dirZ: z }); // On envoie Z
+}
+
+if(joystickHeightZone) {
+    joystickHeightZone.addEventListener("pointerdown", (e) => {
+        isDraggingHeight = true;
+        joystickHeightCursor.style.transition = "none"; 
+        updateDepthJoystick(e);
+    });
+}
+
+function updateDepthJoystick(e) {
+    const rect = joystickHeightZone.getBoundingClientRect();
+    const centerY = rect.top + (rect.height / 2);
+
+    let dy = e.clientY - centerY;
+
+    if (dy > maxCursorDistY) dy = maxCursorDistY;
+    if (dy < -maxCursorDistY) dy = -maxCursorDistY;
+
+    joystickHeightCursor.style.top = `${dy + (trackHeight / 2)}px`;
+
+    const normalizedZ = -(dy / maxCursorDistY); 
+
+    sendDepthData(normalizedZ);
+}

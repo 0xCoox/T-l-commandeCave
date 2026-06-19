@@ -148,6 +148,28 @@
             <label for="sizeSlider">Taille des points :</label>
             <input type="range" id="sizeSlider" min="0.001" max="0.5" step="0.001" value="0.1" disabled>
         </div>
+
+    <hr style="border-color: #333; margin: 20px 0;">
+        <h3>Déplacer l'arbre</h3>
+        
+        <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px;">
+            <div id="joystickContainer" style="text-align: center; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                <label style="font-size: 14px; display: block; margin-bottom: 5px;">Face (X/Y)</label>                
+                <div id="joystickZone" style="width: 150px; height: 150px; background: #222; border: 3px solid #444; border-radius: 50%; position: relative; touch-action: none; margin: 0 auto; box-shadow: inset 0 0 10px #000;">
+                <div id="joystickCursor" style="width: 50px; height: 50px; background: #007bff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></div>
+                </div>
+                <p id="joystickValues" style="font-size: 12px; color: #888; margin-top: 10px;">X: 0.00 | Y: 0.00</p>
+            </div>
+
+            <div id="joystickHeightContainer" style="text-align: center; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                <label style="font-size: 14px; display: block; margin-bottom: 5px;">Profondeur</label>
+                <div id="joystickHeightZone" style="width: 60px; height: 150px; background: #222; border: 3px solid #444; border-radius: 30px; position: relative; touch-action: none; margin: 0 auto; box-shadow: inset 0 0 10px #000;">
+                    <div id="joystickHeightCursor" style="width: 40px; height: 40px; background: #28a745; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></div>
+                </div>
+                <p id="joystickHeightValue" style="font-size: 12px; color: #888; margin-top: 10px;">Z: 0.00</p>
+            </div>
+
+        </div>
     </div>
 
     <script type="module" src="./app.js?v=3"></script> 
