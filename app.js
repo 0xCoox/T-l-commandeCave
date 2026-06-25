@@ -26,6 +26,8 @@ const joystickHeightContainer = document.getElementById("joystickHeightContainer
 const joystickHeightZone = document.getElementById("joystickHeightZone");
 const joystickHeightCursor = document.getElementById("joystickHeightCursor");
 const joystickHeightValue = document.getElementById("joystickHeightValue");
+const autoRotateBtn = document.getElementById("autoRotateBtn");
+let isAutoRotating = false;
 
 // Contrôles désactivés jusqu'à la confirmation du join
 flipBtn.disabled = true;
@@ -33,6 +35,7 @@ meshSelect.disabled = true;
 sizeSlider.disabled = true; 
 confirmMeshBtn.disabled = true; // 🌟 Désactivé par défaut
 clipSlider.disabled = true;
+autoRotateBtn.disabled = true;  // 🌟 Désactivé avant la connexion
 
 // Connexion au serveur
 connectBtn.addEventListener("click", () => {
@@ -73,6 +76,7 @@ network.setCallbacks({
                 meshSelect.disabled = false;
                 sizeSlider.disabled = false; 
                 confirmMeshBtn.disabled = false; 
+                autoRotateBtn.disabled = false; // 🔄 Bouton activé !
                 
                 // Activation des Joysticks
                 if (joystickContainer) {
@@ -98,6 +102,14 @@ network.setCallbacks({
         meshSelect.disabled = true;
         sizeSlider.disabled = true;
         confirmMeshBtn.disabled = true;
+        autoRotateBtn.disabled = true; // 🔄 Bouton désactivé
+        
+        // Si on était en train de tourner, on remet le bouton à zéro
+        if (isAutoRotating) {
+            isAutoRotating = false;
+            autoRotateBtn.innerText = "▶ Lancer la Rotation Auto";
+            autoRotateBtn.style.background = "#17a2b8";
+        }
 
         // Désactivation des Joysticks
         if (joystickContainer) {
@@ -120,6 +132,13 @@ network.setCallbacks({
         sizeSlider.disabled = true;
         confirmMeshBtn.disabled = true;
         clipSlider.disabled = true; 
+        autoRotateBtn.disabled = true;
+
+        if (isAutoRotating) {
+            isAutoRotating = false;
+            autoRotateBtn.innerText = "▶ Lancer la Rotation Auto";
+            autoRotateBtn.style.background = "#17a2b8";
+        }
 
         // Désactivation des Joysticks
         if (joystickContainer) {
@@ -203,6 +222,24 @@ clipSlider.addEventListener("input", (event) => {
     const height = parseFloat(event.target.value);
     console.log(`changeClippingHeight → ${height}`);
     sendModuleCommand(INSTANCE_UUID, "changeClippingHeight", { height: height });
+});
+
+// ==========================================
+// 🔄 ROTATION AUTOMATIQUE
+// ==========================================
+autoRotateBtn.addEventListener("click", () => {
+    isAutoRotating = !isAutoRotating;
+    
+    if (isAutoRotating) {
+        autoRotateBtn.innerText = "⏸ Mettre en Pause (Rotation)";
+        autoRotateBtn.style.background = "#dc3545"; // Rouge
+    } else {
+        autoRotateBtn.innerText = "▶ Lancer la Rotation Auto";
+        autoRotateBtn.style.background = "#17a2b8"; // Bleu
+    }
+    
+    // On envoie l'état au serveur
+    sendModuleCommand(INSTANCE_UUID, "toggleAutoRotate", { state: isAutoRotating });
 });
 
 
