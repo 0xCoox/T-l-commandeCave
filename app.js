@@ -284,38 +284,22 @@ confirmMeshBtn.addEventListener("click", () => {
     }, 1500);
 });
 
-// ==========================================
-// 🖐 GESTION DU MULTI-TOUCH (ROTATION TRACKBALL & PINCH)
-// ==========================================
+//gestion trackball
+
 let initialPinchDistance = null;
 let currentScale = parseFloat(sizeSlider.value) || 0.1;
 
-// --- État interne façon THREE.TrackballControls, mais appliqué à l'objet plutôt qu'à une caméra ---
-// Dans TrackballControls, _eye et object.up évoluent ensemble à chaque drag (c'est ce qui donne le
-// comportement "trackball" : pas de gimbal lock, la rotation reste cohérente peu importe l'orientation
-// courante). Ici, notre "caméra" est fixe, donc on rejoue exactement la même logique sur un couple
-// eye/up virtuel, et on applique le quaternion obtenu (inversé) directement à l'objet.
-const ROTATE_SPEED = 3.0; // équivalent de rotateSpeed dans TrackballControls
 
-let _trackballEye = new THREE.Vector3(0, 0, 1);
-let _trackballUp = new THREE.Vector3(0, 1, 0);
+const ROTATE_SPEED = 3.0; 
+const _trackballEye = new THREE.Vector3(0, 0, 1);
+const _trackballUp = new THREE.Vector3(0, 1, 0);
 const _moveCurr = new THREE.Vector2();
 const _movePrev = new THREE.Vector2();
 
 function resetTrackballState() {
-    _trackballEye.set(0, 0, 1);
-    _trackballUp.set(0, 1, 0);
 }
 
-// Équivalent de TrackballControls._getMouseOnCircle, mais normalisé pour un canvas de
-// n'importe quel ratio largeur/hauteur.
-// ⚠️ La formule originale de three.js divise toujours y par rect.width ("screen.width
-// intentional"), ce qui est correct pour un canvas plein écran (large), mais devient un
-// bug si le canvas est plus étroit que haut (notre preview fait une hauteur fixe de 250px
-// dans un petit encart) : diviser par une largeur trop petite amplifie énormément la
-// composante verticale, au point qu'elle écrase l'axe horizontal (d'où l'impression
-// qu'un slide vers la droite finit par tourner "vers le haut"). On utilise donc la même
-// référence (le plus petit côté) pour x et y, pour garder un vrai mapping circulaire.
+//gestion de n'importe quelle taille de fenetre
 function getMouseOnCircle(clientX, clientY) {
     const rect = canvas_3d.getBoundingClientRect();
     const radius = Math.min(rect.width, rect.height) * 0.5;
@@ -324,12 +308,12 @@ function getMouseOnCircle(clientX, clientY) {
 
     return new THREE.Vector2(
         (clientX - centerX) / radius,
-        (centerY - clientY) / radius // inversé : vers le haut = positif, comme dans three.js
+        (centerY - clientY) / radius 
     );
 }
 
-// Équivalent de TrackballControls._rotateCamera, mais retourne le quaternion incrémental
-// au lieu de l'appliquer directement à une caméra.
+//Calcul du vecteur de déplacement
+
 function computeTrackballQuaternion() {
     const moveDirection = new THREE.Vector3(_moveCurr.x - _movePrev.x, _moveCurr.y - _movePrev.y, 0);
     let angle = moveDirection.length();
@@ -350,13 +334,10 @@ function computeTrackballQuaternion() {
     angle *= ROTATE_SPEED;
     const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
 
-    // Met à jour l'état interne, comme _eye/object.up dans TrackballControls
-    _trackballEye.applyQuaternion(quaternion);
-    _trackballUp.applyQuaternion(quaternion);
-
     return quaternion;
 }
 
+//
 canvas_3d.addEventListener('pointerdown', e => {
     canvas_3d.setPointerCapture(e.pointerId);
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -380,12 +361,10 @@ canvas_3d.addEventListener('pointermove', e => {
 
         if (quaternion) {
             if (point_cloud) {
-                // La rotation calculée orbiterait une caméra virtuelle autour de l'objet ;
-                // pour faire tourner l'objet lui-même (caméra fixe), on applique la rotation inverse.
+                // pour faire tourner l'objet lui-même (camera) on applique la rotation inverse
                 point_cloud.quaternion.premultiply(quaternion.clone().invert());
                 render();
             }
-
             sendModuleCommand(INSTANCE_UUID, "rotateTree", {
                 x: quaternion.x,
                 y: quaternion.y,
@@ -448,9 +427,7 @@ canvas_3d.addEventListener('pointercancel', e => {
     }
 });
 
-// ==========================================
-// 🎚 GESTION DES SLIDERS
-// ==========================================
+// GESTION DES SLIDERS
 sizeSlider.addEventListener("input", (event) => {
     const newSize = parseFloat(event.target.value);
     currentScale = newSize; // Synchronisation avec le pinch
@@ -469,9 +446,7 @@ if (clipSlider) {
     });
 }
 
-// ==========================================
-// 🔄 ROTATION AUTOMATIQUE
-// ==========================================
+// ROTATION AUTOMATIQUE
 autoRotateBtn.addEventListener("click", () => {
     isAutoRotating = !isAutoRotating;
     
@@ -486,9 +461,7 @@ autoRotateBtn.addEventListener("click", () => {
     sendModuleCommand(INSTANCE_UUID, "toggleAutoRotate", { state: isAutoRotating });
 });
 
-// ==========================================
-// 🕹️ CONTRÔLE JOYSTICK 2D (FACE X/Y)
-// ==========================================
+//  CONTRÔLE JOYSTICK 2D (FACE X/Y)
 let isDragging = false;
 let joystickRadius = 75; 
 let maxCursorDist = joystickRadius - 25; 
@@ -550,9 +523,7 @@ function updateJoystick(e) {
     sendJoystickData(normalizedX, normalizedY);
 }
 
-// ==========================================
-// 🚀 CONTRÔLE JOYSTICK 1D (PROFONDEUR Z)
-// ==========================================
+// CONTRÔLE JOYSTICK 1D (PROFONDEUR Z)
 let isDraggingHeight = false;
 let trackHeight = 150; 
 let heightCursorSize = 40; 
