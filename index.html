@@ -2,177 +2,444 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Télécommande CAVE</title>
-    <link rel="preload" href="test_point_cloud.glb" as="fetch" crossorigin="anonymous">
-    <link rel="preload" href="arbre_rue.glb" as="fetch" crossorigin="anonymous">
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
     <style>
-        body {  
-            font-family: Arial, sans-serif;
-            background: #121212;
-            color: white;
-            text-align: center;
-            padding: 20px;
+        :root {
+            --bg: #0a0a0a;
+            --surface: #111;
+            --surface2: #181818;
+            --border: rgba(255,255,255,0.07);
+            --border2: rgba(255,255,255,0.13);
+            --accent: #00e5ff;
+            --accent-dim: rgba(0,229,255,0.12);
+            --text: #e8e8e8;
+            --text-muted: #555;
+            --text-dim: #888;
+            --green: #22c55e;
+            --orange: #f97316;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --radius: 12px;
+            --radius-sm: 8px;
         }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        input, button, select {
-            width: 100%;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
             padding: 12px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: none;
-            box-sizing: border-box;
-            font-size: 16px;
+            min-height: 100vh;
         }
-        input, select {
-            background: #2a2a2a;
-            color: white;
+
+        .app { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+
+        #mooveFinger {
+    /* Indispensable pour que le JS gère 100% des événements tactiles */
+            touch-action: none; 
+            /* Optionnel mais recommandé : empêche la sélection de texte par erreur */
+            user-select: none;
+            -webkit-user-select: none;
         }
-        button {
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+        /* HEADER */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
         }
-        button:hover { background: #0056b3; }
-        button.action-btn { background: #28a745; }
-        button.action-btn:hover { background: #218838; }
-        
-        /* Style pour montrer qu'un élément est désactivé */
-        button:disabled, select:disabled {
-            background: #555;
-            color: #999;
-            cursor: not-allowed;
-            opacity: 0.8;
+        .header-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent);
         }
-        
         #status {
-            font-weight: bold;
-            color: #ffc107;
-            margin-bottom: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--red);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .slider-container {
-            margin: 20px 0;
-            text-align: left;
+        #status::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            display: inline-block;
         }
-        .slider-container label {
-            font-weight: bold;
+        #status.connected { color: var(--green); }
+        #status.connecting { color: #fbbf24; }
+
+        /* CARDS */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        .card-title {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* INPUTS */
+        .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .input-group { flex: 1; }
+        .input-group label {
             display: block;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
             margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        input[type="text"]:focus { border-color: var(--accent); }
+
+        /* BUTTONS */
+        .btn {
+            width: 100%;
+            padding: 11px 16px;
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: var(--surface2);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+        .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+        .btn-primary:hover:not(:disabled) { background: #33eaff; }
+        .btn-danger  { border-color: rgba(239,68,68,0.4); color: var(--red); }
+        .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,0.08); }
+        .btn-success { border-color: rgba(34,197,94,0.4); color: var(--green); }
+        .btn-success:hover:not(:disabled) { background: rgba(34,197,94,0.08); }
+        .btn-orange  { border-color: rgba(249,115,22,0.4); color: var(--orange); }
+        .btn-orange:hover:not(:disabled) { background: rgba(249,115,22,0.08); }
+        .btn-blue    { border-color: rgba(59,130,246,0.4); color: var(--blue); }
+        .btn-blue:hover:not(:disabled) { background: rgba(59,130,246,0.08); }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        /* SELECT */
+        select {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+        select:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* CANVAS PREVIEW */
+        #canvas_3d {
+            touch-action: none;
+            width: 100%;
+            height: 220px;
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            display: none;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+        }
+        #confirmMeshBtn { display: none; }
+
+        /* SLIDERS */
+        .slider-group { margin-bottom: 14px; }
+        .slider-group:last-child { margin-bottom: 0; }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .slider-header label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .slider-val {
+            font-size: 11px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: var(--accent);
+            background: var(--accent-dim);
+            padding: 2px 7px;
+            border-radius: 4px;
         }
         input[type="range"] {
             -webkit-appearance: none;
-            height: 8px;
-            background: #555;
+            width: 100%;
+            height: 3px;
+            background: var(--border2);
+            border-radius: 2px;
             outline: none;
-            border-radius: 5px;
-            padding: 0;
             cursor: pointer;
+            padding: 0;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #007bff;
+            width: 16px; height: 16px;
+            background: var(--accent);
             border-radius: 50%;
             cursor: pointer;
+            box-shadow: 0 0 0 3px var(--accent-dim);
         }
-        input[type="range"]:disabled::-webkit-slider-thumb {
-            background: #777;
-            cursor: not-allowed;
+        input[type="range"]:disabled { opacity: 0.3; cursor: not-allowed; }
+        input[type="range"]:disabled::-webkit-slider-thumb { cursor: not-allowed; }
+
+        /* FINGER ZONE */
+        #mooveFinger {
+            width: 100%;
+            height: 110px;
+            background: var(--surface2);
+            border: 1px dashed var(--border2);
+            border-radius: var(--radius-sm);
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            user-select: none;
+            cursor: crosshair;
+            transition: border-color 0.15s, background 0.15s;
         }
-        
-        /* 🌟 STYLE POUR LA ZONE DE PREVISUALISATION */
-        #previewZone {
-            margin-top: 15px;
-            text-align: center;
-            background: #2a2a2a;
-            padding: 10px;
-            border-radius: 5px;
+        #mooveFinger.active {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--accent);
         }
+        .finger-icon { font-size: 22px; opacity: 0.4; }
+
+        /* JOYSTICKS */
+        .joysticks-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .joystick-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.3;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .joystick-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        #joystickZone {
+            width: 140px; height: 140px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 50%;
+            position: relative;
+            touch-action: none;
+        }
+        #joystickHeightZone {
+            width: 56px; height: 140px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 28px;
+            position: relative;
+            touch-action: none;
+        }
+        .joystick-cursor {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        #joystickCursor {
+            width: 44px; height: 44px;
+            background: var(--blue);
+            box-shadow: 0 0 0 8px rgba(59,130,246,0.15);
+        }
+        #joystickHeightCursor {
+            width: 36px; height: 36px;
+            background: var(--green);
+            box-shadow: 0 0 0 8px rgba(34,197,94,0.15);
+        }
+        .joystick-val {
+            font-size: 10px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: var(--text-muted);
+        }
+
+        /* divider */
+        .divider { height: 1px; background: var(--border); margin: 2px 0; }
     </style>
 </head>
 <body>
+<div class="app">
 
-    <div class="container">
-        <h2>Contrôle du CAVE</h2>
-        <div id="status">Statut : Déconnecté</div>
+    <div class="header">
+        <span class="header-title">CAVE Remote</span>
+        <span id="status">Déconnecté</span>
+    </div>
 
-        <label for="ipInput">Adresse IP du Serveur CAVE :</label>
-        <input type="text" id="ipInput" value="ws://localhost">
-        <label for="portInput">Port :</label>
-        <input type="text" id="portInput" value="3000">
-        <button id="connectBtn">Se connecter</button>
-
-        <hr style="border-color: #333; margin: 20px 0;">
-
-        <h3>Actions</h3>
-        <button id="flipBtn" class="action-btn" disabled>Inverser les Yeux (Flip Eyes)</button>
-        <button id="autoRotateBtn" class="action-btn" disabled>Lancer la Rotation Auto</button>
-
-<div class="slider-container">
-            <label for="meshSelect">Sélectionner un nuage de points (.ply) :</label>
-            <select id="meshSelect" disabled>
-                <option value="test_point_cloud.ply" data-model="test_point_cloud.glb">Arbre d'origine</option>
-                <option value="arbre_rue.ply" data-model="arbre_rue.glb">Arbre de rue</option>
-            </select>
-
-            <div id="previewZone">
-                <model-viewer id="meshViewer" 
-                              src="" 
-                              camera-controls 
-                              auto-rotate 
-                              shadow-intensity="1"
-                              style="width: 100%; height: 250px; background-color: #1e1e1e; border-radius: 5px; display: none;">
-                </model-viewer>
-                
-                <button id="confirmMeshBtn" class="action-btn" style="margin-top: 10px; background: #ff8c00; display: none;" disabled>Charger cet arbre</button>
+    <div class="card">
+        <div class="card-title">Connexion</div>
+        <div class="input-row">
+            <div class="input-group">
+                <label for="ipInput">Adresse IP</label>
+                <input type="text" id="ipInput" value="ws://localhost">
+            </div>
+            <div class="input-group" style="max-width: 90px;">
+                <label for="portInput">Port</label>
+                <input type="text" id="portInput" value="3000">
             </div>
         </div>
+        <button id="connectBtn" class="btn btn-primary">Se connecter</button>
+    </div>
 
-        <div class="slider-container">
-            <label for="clipSlider">Hauteur de la Coupe :</label>
-            <input type="range" id="clipSlider" min="-2" max="10" step="0.1" value="10" disabled>
-        </div>
-
-        <div class="slider-container">
-            <label for="sizeSlider">Taille des points :</label>
-            <input type="range" id="sizeSlider" min="0.001" max="0.5" step="0.001" value="0.1" disabled>
-        </div>
-
-    <hr style="border-color: #333; margin: 20px 0;">
-        <h3>Déplacer l'arbre</h3>
-        
-        <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px;">
-            <div id="joystickContainer" style="text-align: center; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
-                <label style="font-size: 14px; display: block; margin-bottom: 5px;">Face (X/Y)</label>                
-                <div id="joystickZone" style="width: 150px; height: 150px; background: #222; border: 3px solid #444; border-radius: 50%; position: relative; touch-action: none; margin: 0 auto; box-shadow: inset 0 0 10px #000;">
-                <div id="joystickCursor" style="width: 50px; height: 50px; background: #007bff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></div>
-                </div>
-                <p id="joystickValues" style="font-size: 12px; color: #888; margin-top: 10px;">X: 0.00 | Y: 0.00</p>
-            </div>
-
-            <div id="joystickHeightContainer" style="text-align: center; opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
-                <label style="font-size: 14px; display: block; margin-bottom: 5px;">Profondeur</label>
-                <div id="joystickHeightZone" style="width: 60px; height: 150px; background: #222; border: 3px solid #444; border-radius: 30px; position: relative; touch-action: none; margin: 0 auto; box-shadow: inset 0 0 10px #000;">
-                    <div id="joystickHeightCursor" style="width: 40px; height: 40px; background: #28a745; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></div>
-                </div>
-                <p id="joystickHeightValue" style="font-size: 12px; color: #888; margin-top: 10px;">Z: 0.00</p>
-            </div>
-
+    <div class="card">
+        <div class="card-title">Actions</div>
+        <div class="btn-grid">
+            <button id="flipBtn" class="btn btn-danger" disabled>⇄ Flip Eyes</button>
+            <button id="autoRotateBtn" class="btn btn-blue" disabled>▶ Auto-rotate</button>
         </div>
     </div>
 
-    <script type="module" src="./app.js?v=4"></script> 
+    <div class="card">
+        <div class="card-title">Nuage de points</div>
+        <select id="meshSelect" disabled>
+            <option value="test_point_cloud.ply">Arbre d'origine</option>
+            <option value="arbre_rue.ply">Arbre de rue</option>
+        </select>
+        <canvas id="canvas_3d"></canvas>
+        <button id="confirmMeshBtn" class="btn btn-orange" disabled>Charger dans le CAVE</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Paramètres</div>
+        <div class="slider-group">
+            <div class="slider-header">
+                <label for="clipSlider">Hauteur de coupe</label>
+                <span class="slider-val" id="clipVal">10.0</span>
+            </div>
+            <input type="range" id="clipSlider" min="-2" max="10" step="0.1" value="10" disabled>
+        </div>
+        <div class="slider-group">
+            <div class="slider-header">
+                <label for="sizeSlider">Taille des points</label>
+                <span class="slider-val" id="sizeVal">0.100</span>
+            </div>
+            <input type="range" id="sizeSlider" min="0.001" max="0.5" step="0.001" value="0.1" disabled>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Rotation (glisser)</div>
+        <div id="mooveFinger">
+            <span class="finger-icon">☝</span>
+            Glisser le doigt ici
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Déplacement</div>
+        <div class="joysticks-row">
+            <div class="joystick-wrap" id="joystickContainer">
+                <span class="joystick-label">Face X/Y</span>
+                <div id="joystickZone">
+                    <div id="joystickCursor" class="joystick-cursor"></div>
+                </div>
+                <span id="joystickValues" class="joystick-val">X: 0.00 | Y: 0.00</span>
+            </div>
+            <div class="joystick-wrap" id="joystickHeightContainer">
+                <span class="joystick-label">Profondeur</span>
+                <div id="joystickHeightZone">
+                    <div id="joystickHeightCursor" class="joystick-cursor"></div>
+                </div>
+                <span id="joystickHeightValue" class="joystick-val">Z: 0.00</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    document.getElementById('clipSlider').addEventListener('input', e => {
+        document.getElementById('clipVal').textContent = parseFloat(e.target.value).toFixed(1);
+    });
+    document.getElementById('sizeSlider').addEventListener('input', e => {
+        document.getElementById('sizeVal').textContent = parseFloat(e.target.value).toFixed(3);
+    });
+    const statusDiv = document.getElementById('status');
+    const observer = new MutationObserver(() => {
+        const t = statusDiv.innerText.toLowerCase();
+        statusDiv.className = t.includes('connecté') && !t.includes('dé') ? 'connected'
+            : t.includes('cours') ? 'connecting' : '';
+    });
+    observer.observe(statusDiv, { childList: true, characterData: true, subtree: true });
+</script>
+<script type="module" src="./app.js?v=4"></script>
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
 </body>
 </html>
